@@ -18,6 +18,11 @@ class SentMemeTableViewController: UITableViewController {
         return appDelegate.memes
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        self.tableView.reloadData()
+    }
+    
     // Plan how many rows on screen
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return memes.count
@@ -33,9 +38,10 @@ class SentMemeTableViewController: UITableViewController {
 
     // Jump to detail view if a row is selected
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let detailController = storyboard?.instantiateViewController(identifier: "MemeDetailViewController") as! MemeDetailViewController
-        detailController.meme = memes[(indexPath as NSIndexPath).row]
-        navigationController?.pushViewController(detailController, animated: true)
+        let detailController = self.storyboard!.instantiateViewController(identifier: "MemeDetailViewController") as! MemeDetailViewController
+        detailController.meme = self.memes[(indexPath as NSIndexPath).row]
+        print(detailController.meme.topText)
+        self.navigationController!.pushViewController(detailController, animated: true)
     }
 
 }

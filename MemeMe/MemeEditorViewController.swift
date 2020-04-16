@@ -19,6 +19,8 @@ class MemeEditorViewController: UIViewController, UIImagePickerControllerDelegat
     @IBOutlet weak var toolbar: UIToolbar!
     @IBOutlet weak var navbar: UINavigationBar!
     
+    /// MARK: Setup the text fields
+    
     let memeTextAttributes: [NSAttributedString.Key: Any] = [
         NSAttributedString.Key.strokeColor: UIColor.black,
         NSAttributedString.Key.foregroundColor: UIColor.white,
@@ -26,20 +28,28 @@ class MemeEditorViewController: UIViewController, UIImagePickerControllerDelegat
         NSAttributedString.Key.strokeWidth: -2.0
     ]
     
-    // Setup the text fields
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        topTextField.delegate = self
-        bottomTextField.delegate = self
-        topTextField.text = "TOP"
-        bottomTextField.text = "BOTTOM"
-        topTextField.defaultTextAttributes = memeTextAttributes
-        bottomTextField.defaultTextAttributes = memeTextAttributes
-        topTextField.textAlignment = .center
-        bottomTextField.textAlignment = .center
+    func formatTextField(_ field: UITextField, _ text: String){
+        field.delegate = self
+        field.text = text
+        field.defaultTextAttributes = memeTextAttributes
+        field.textAlignment = .center
     }
     
-    // Set up the buttons
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        self.formatTextField(topTextField, "TOP")
+        self.formatTextField(bottomTextField, "BOTTOM")
+    }
+    
+    func textFieldDidBeginEditing(_ textField: UITextField){
+        textField.text = ""
+    }
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+    }
+    
+    /// MARK: Set up the buttons
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         self.navigationController?.setToolbarHidden(false, animated: true)
@@ -50,11 +60,10 @@ class MemeEditorViewController: UIViewController, UIImagePickerControllerDelegat
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-//        self.navigationController?.setNavigationBarHidden(false, animated: true)
         unsubscribeFromeKeyboardNotifications()
     }
     
-    // Fix keyboard covering bottom text
+    /// MARK: Fix keyboard covering bottom text
     @objc func keyboardWillShow(_ notification: Notification) {
         if bottomTextField.isEditing, view.frame.origin.y == 0 {
             view.frame.origin.y -= getKeyboardHeight(notification)
@@ -85,13 +94,7 @@ class MemeEditorViewController: UIViewController, UIImagePickerControllerDelegat
         NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
     }
     
-    func textFieldDidBeginEditing(_ textField: UITextField){
-        textField.text = ""
-    }
-    
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        textField.resignFirstResponder()
-    }
+    /// MARK: Choosing images
     
     @IBAction func pickAnImageFromAlbum(_ sender: Any) {
         let imagePicker = UIImagePickerController()
@@ -120,6 +123,8 @@ class MemeEditorViewController: UIViewController, UIImagePickerControllerDelegat
         dismiss(animated: true, completion: nil)
     }
     
+    /// MARK: Creating a meme
+    
     func generateMemedImage() -> UIImage {
         
         // Hide toolbar and navbar
@@ -142,21 +147,29 @@ class MemeEditorViewController: UIViewController, UIImagePickerControllerDelegat
     // Generates the meme object
     func save(_ memedImage: UIImage) {
         
-        // IMO we could just save the memedImage, I don't know why we bother keeping the text fields seperate
         let meme = Meme(topText: topTextField.text!, bottomText: bottomTextField.text!, originalImage: imagePickerView.image!, memedImage: memedImage)
         
         // Add to array
         (UIApplication.shared.delegate as! AppDelegate).memes.append(meme)
-        //dismiss(animated: true, completion: nil)
     }
     
     // iOS share activity
     @IBAction func share(){
         let image = generateMemedImage()
-        save(image)
         let controller = UIActivityViewController(activityItems: [image],
                                                   applicationActivities: nil)
+        
+        // Code I tried to make the iPad share work: (not working, apparently not in rubric)
+        //controller.popoverPresentationController?.barButtonItem = (self.shareButton as! UIBarButtonItem)
+        //controller.popoverPresentationController?.sourceView = self.view
+        //controller.modalPresentationStyle = UIModalPresentationStyle.fullScreen
+        
         present(controller, animated: true, completion: nil)
+        controller.completionWithItemsHandler = { (activity, success, items, error) in
+            if(success && error == nil) {
+                self.save(image)
+            }
+        }
     }
     
     // Clear everything and start over
@@ -165,8 +178,7 @@ class MemeEditorViewController: UIViewController, UIImagePickerControllerDelegat
         bottomTextField.text = "BOTTOM"
         imagePickerView.image = nil
         shareButton.isEnabled = false
-        dismiss(animated: true, completion: nil)
-//        navigationController?.popViewController(animated: true)
+        self.dismiss(animated: true, completion: nil)
     }
     
     
